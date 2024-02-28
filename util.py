@@ -45,7 +45,7 @@ def load_data(path):
         for row in f_csv:
             data_temp = [float(row[1]), float(row[2]), float(row[3])]
             data.append(data_temp)
-    return np.array(data, dtype=np.float)
+    return np.array(data, dtype=float)
 
 
 def regularize(matrix: np.ndarray, axis: int = 0):
@@ -125,7 +125,7 @@ def resample(data: list, length: int = 0):
         length = min([len(d) for d in data])
 
     for item in data:
-        index = np.linspace(0, len(item), length, endpoint=False, dtype=np.int)
+        index = np.linspace(0, len(item), length, endpoint=False, dtype=int)
         result.append(item[index, :])
 
     return result, length
@@ -138,7 +138,7 @@ def reshape(data: list, length: int):
     :param length: the length of the time series
     :return:
     """
-    result = np.zeros((len(data), length, 3), dtype=np.float)
+    result = np.zeros((len(data), length, 3), dtype=float)
     for i, item in enumerate(data):
         result[i, :, :] = item
     return result

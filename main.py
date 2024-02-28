@@ -14,7 +14,7 @@ from cnn import Cnn
 
 
 def train():
-    TIMESTAMP = "{0:%Y-%m-%d-%H-%M/}".format(datetime.now())
+    TIMESTAMP = "{0:%Y_%m_%d_%H_%M/}".format(datetime.now())
     log.log_info('program start')
     data, num_good, num_bad = util.load_train_data(num_data // 2)
     log.log_debug('Data loading completed')
@@ -38,13 +38,13 @@ def train():
 
     assert len(test_bad_data) == len(test_good_data)
     # construct test data
-    test_y = np.array([1.] * len(test_good_data) + [0.] * len(test_bad_data), dtype=np.float).reshape(
+    test_y = np.array([1.] * len(test_good_data) + [0.] * len(test_bad_data), dtype=float).reshape(
         (len(test_bad_data) + len(test_good_data), 1))
     test_x = np.vstack((test_good_data, test_bad_data))
 
     # expand the number of bad data for train
     train_x = np.vstack((train_good_data, train_bad_data_origin))
-    train_y = np.array([1.] * len(train_good_data) + [0.] * len(train_bad_data_origin), dtype=np.float).reshape(
+    train_y = np.array([1.] * len(train_good_data) + [0.] * len(train_bad_data_origin), dtype=float).reshape(
         (len(train_bad_data_origin) + len(train_good_data), 1))
 
     train_x, train_y, num_expand = util.expand(train_x, train_y)
@@ -84,15 +84,15 @@ def train():
     optimizer = cnn.get_optimizer(cost)
     predict, accuracy = cnn.predict()
 
-    init = tf.global_variables_initializer()
-    saver = tf.train.Saver()
+    init = tf.compat.v1.global_variables_initializer()
+    saver = tf.compat.v1.train.Saver()
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
 
         # log for tensorboard
-        merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter("resource/tsb/train/" + TIMESTAMP, sess.graph)
-        test_writer = tf.summary.FileWriter("resource/tsb/test/" + TIMESTAMP)
+        merged = tf.compat.v1.summary.merge_all()
+        train_writer = tf.compat.v1.summary.FileWriter("resource/tsb/train/" + TIMESTAMP, sess.graph)
+        test_writer = tf.compat.v1.summary.FileWriter("resource/tsb/test/" + TIMESTAMP)
 
         if enable_debug:
             sess = tf_debug.LocalCLIDebugWrapperSession(sess)
@@ -158,10 +158,10 @@ def predict(path: str, data_x: np.ndarray):
         data_x[i, :, 1] = util.regularize(data_x[i, :, 1])
         data_x[i, :, 2] = util.regularize(data_x[i, :, 2])
 
-    with tf.Session() as sess:
-        saver = tf.train.import_meta_graph(os.path.join(path, '.meta'))
+    with tf.compat.v1.Session() as sess:
+        saver = tf.compat.v1.train.import_meta_graph(os.path.join(path, '.meta'))
         saver.restore(sess, path)
-        graph = tf.get_default_graph()
+        graph = tf.compat.v1.get_default_graph()
         placehold_x = graph.get_tensor_by_name('input/data_x:0')
         predict_value = graph.get_tensor_by_name('accuracy/predict:0')
         keep_prob = graph.get_tensor_by_name('keep_prob:0')

@@ -1,6 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
+tf.compat.v1.disable_eager_execution()
+
 
 class Cnn(object):
 
@@ -9,7 +11,7 @@ class Cnn(object):
         self.__fc_layers = fc_layers
         self.__filters = filters
         self.__lr = learning_rate
-        self.__keep_prob = tf.placeholder(tf.float32, name='keep_prob')
+        self.__keep_prob = tf.compat.v1.placeholder(tf.float32, name='keep_prob')
 
     @property
     def x(self):
@@ -30,13 +32,13 @@ class Cnn(object):
         :return:
         """
         mean = tf.reduce_mean(var)
-        tf.summary.scalar('mean_value', mean)
-        with tf.name_scope('stddev'):
+        tf.compat.v1.summary.scalar('mean_value', mean)
+        with tf.compat.v1.name_scope('stddev'):
             stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-        tf.summary.scalar('stddev_value', stddev)
-        tf.summary.scalar('max_value', tf.reduce_max(var))
-        tf.summary.scalar('min_value', tf.reduce_min(var))
-        tf.summary.histogram('histogram', var)
+        tf.compat.v1.summary.scalar('stddev_value', stddev)
+        tf.compat.v1.summary.scalar('max_value', tf.reduce_max(var))
+        tf.compat.v1.summary.scalar('min_value', tf.reduce_min(var))
+        tf.compat.v1.summary.histogram('histogram', var)
 
     def initialize(self, n_w0, n_c0, n_y):
         """
@@ -46,9 +48,9 @@ class Cnn(object):
         :param n_y: number of the labels
         :return:
         """
-        with tf.name_scope('input'):
-            self.__x = tf.placeholder(tf.float32, (None, n_w0, n_c0), 'data_x')
-            self.__y = tf.placeholder(tf.float32, (None, n_y), 'data_y')
+        with tf.compat.v1.name_scope('input'):
+            self.__x = tf.compat.v1.placeholder(tf.float32, (None, n_w0, n_c0), 'data_x')
+            self.__y = tf.compat.v1.placeholder(tf.float32, (None, n_y), 'data_y')
 
         f = self.__filters
         convs = self.__conv_layers
@@ -60,12 +62,12 @@ class Cnn(object):
         shape = n_c0
         for i in range(len(convs)):
             if convs[i] == 0:
-                with tf.name_scope('conv' + str(conv_index - 1) + '/'):
+                with tf.compat.v1.name_scope('conv' + str(conv_index - 1) + '/'):
                     a = tf.nn.pool(a_pre, window_shape=[f[i][0]], padding=f[i][2], pooling_type="MAX")
                     a_pre = a
             elif convs[i] == -1:
-                with tf.name_scope('conv' + str(conv_index - 1) + '/'):
-                    a = tf.nn.dropout(a_pre, keep_prob=self.__keep_prob)
+                with tf.compat.v1.name_scope('conv' + str(conv_index - 1) + '/'):
+                    a = tf.nn.dropout(a_pre, rate=1 - (self.__keep_prob))
                 a_pre = a
             else:
                 a = self.__conv_layer(a_pre, f[i][0], shape, convs[i], 'conv' + str(conv_index), stride=f[i][1],
@@ -74,7 +76,7 @@ class Cnn(object):
                 a_pre = a
                 conv_index += 1
         # flatten
-        with tf.name_scope('flatten'):
+        with tf.compat.v1.name_scope('flatten'):
             a_pre = tf.reshape(a, [-1, int(a_pre.shape[1]) * int(a_pre.shape[2])])
 
         # full connected forward
@@ -86,54 +88,54 @@ class Cnn(object):
         self.__a = a
 
     def __fc_layer(self, input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
-        with tf.name_scope(layer_name):
-            with tf.name_scope('weights'):
-                initial = tf.truncated_normal([input_dim, output_dim], stddev=0.1)
+        with tf.compat.v1.name_scope(layer_name):
+            with tf.compat.v1.name_scope('weights'):
+                initial = tf.random.truncated_normal([input_dim, output_dim], stddev=0.1)
                 weights = tf.Variable(initial)
                 self.__variable_summaries(weights)
-            with tf.name_scope('biases'):
-                initial = tf.constant(0.1, shape=[output_dim], dtype=np.float)
+            with tf.compat.v1.name_scope('biases'):
+                initial = tf.constant(0.1, shape=[output_dim], dtype=float)
                 biases = tf.Variable(initial)
                 self.__variable_summaries(biases)
-            with tf.name_scope('Wx_plus_b'):
+            with tf.compat.v1.name_scope('Wx_plus_b'):
                 preactivate = tf.matmul(input_tensor, weights) + biases
-                tf.summary.histogram('pre_activations', preactivate)
+                tf.compat.v1.summary.histogram('pre_activations', preactivate)
             activations = act(preactivate, name='activation')
-            tf.summary.histogram('activations', activations)
+            tf.compat.v1.summary.histogram('activations', activations)
             return activations
 
     def __conv_layer(self, input_tensor, kernel_size, input_dim, output_dim, layer_name, stride, padding,
                      act=tf.nn.relu):
-        with tf.name_scope(layer_name):
-            with tf.name_scope('weights'):
-                initial = tf.truncated_normal([kernel_size, input_dim, output_dim], stddev=0.1)
+        with tf.compat.v1.name_scope(layer_name):
+            with tf.compat.v1.name_scope('weights'):
+                initial = tf.random.truncated_normal([kernel_size, input_dim, output_dim], stddev=0.1)
                 weights = tf.Variable(initial)
                 self.__variable_summaries(weights)
-            with tf.name_scope('biases'):
-                initial = tf.constant(0.1, shape=[output_dim], dtype=np.float)
+            with tf.compat.v1.name_scope('biases'):
+                initial = tf.constant(0.1, shape=[output_dim], dtype=float)
                 biases = tf.Variable(initial)
                 self.__variable_summaries(biases)
-            with tf.name_scope('W_conv_x_plus_b'):
-                preactivate = tf.nn.conv1d(input_tensor, weights, stride=stride, padding=padding) + biases
-            tf.summary.histogram('pre_activations', preactivate)
+            with tf.compat.v1.name_scope('W_conv_x_plus_b'):
+                preactivate = tf.nn.conv1d(input=input_tensor, filters=weights, stride=stride, padding=padding) + biases
+            tf.compat.v1.summary.histogram('pre_activations', preactivate)
             activations = act(preactivate, name='activation')
-            tf.summary.histogram('activations', activations)
+            tf.compat.v1.summary.histogram('activations', activations)
             return activations
 
     def cost(self):
-        with tf.name_scope("loss"):
+        with tf.compat.v1.name_scope("loss"):
             cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.__a, labels=self.__y))
-            tf.summary.scalar("loss", cost)
+            tf.compat.v1.summary.scalar("loss", cost)
         return cost
 
     def get_optimizer(self, cost):
-        with tf.name_scope("train"):
-            adam = tf.train.AdamOptimizer(self.__lr).minimize(cost)
+        with tf.compat.v1.name_scope("train"):
+            adam = tf.compat.v1.train.AdamOptimizer(self.__lr).minimize(cost)
         return adam
 
     def predict(self):
-        with tf.name_scope("accuracy"):
-            pre = tf.cast(tf.greater(self.__a, 0.5), dtype=np.float, name='predict')
+        with tf.compat.v1.name_scope("accuracy"):
+            pre = tf.cast(tf.greater(self.__a, 0.5), dtype=float, name='predict')
             accuracy = tf.reduce_mean(tf.cast(tf.equal(pre, self.__y), "float"))
-            tf.summary.scalar("accuracy", accuracy)
+            tf.compat.v1.summary.scalar("accuracy", accuracy)
         return pre, accuracy
